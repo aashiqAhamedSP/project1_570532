@@ -1,0 +1,37 @@
+---
+- hosts: localhost
+  tasks:
+  - name: Create public IP address
+    azure_rm_publicipaddress:
+      resource_group: jenkin-rg
+      allocation_method: Static
+      name: docvmpubip
+    register: output_ip_address
+  - name: Public IP of VM
+    debug:
+      msg: "The public IP is {{ output_ip_address.state.ip_address }}."
+  - name: Create virtual network interface card
+    azure_rm_networkinterface:
+      resource_group: jenkin-rg
+      name: nicansi
+      virtual_network: jenkins-vnet
+      subnet: subnet1
+      public_ip_name: docvmpubip
+  - name: Create a VM with resource group and vnet
+    azure_rm_virtualmachine:
+      resource_group: jenkin-rg
+      name: docvm
+      vm_size: Standard_DS1_v2
+      managed_disk_type: Premium_LRS
+      admin_username: vmadmin
+      ssh_password_enabled: false
+      ssh_public_keys:
+      - path: /home/vmadmin/.ssh
+        key_data: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQC3jbWYsdzLdaD5vxmJPVd3JsoWzD47YNd+HyHWW5leuOmV+iUlzgDXKtRFvQDsgBWQ9JkOkxkO+KiZ+tlWnH40ZcOI8ZCuhzdnFcHisnAtrOkxkz7yLIgqhQhCYmmBo5WhZXJ3y0h9lDVFvQP0N86vLb6QkL7iWfXwOr0corsFeIE9L/eKnjuVDE8//rbjsgsThU5M9H5sc3yu0N+9lZZyLTguv/Hr2yB397vqsb9aHJBTe9uoZNGWGoqllqNz7H8N0GpOxNZa99+ni9qm/OHXi+Ic8dcFd+oDgzxSuxUFthtotO6vsRT0Bi+wedYmf2QdrkEUcDB+bxQE7gQkAgyOvdmT+0JA1mbU5qWTuitqs8aaqmL8N56SMSWLQx4961gylyXESBUs3CyVg1FyWmChibVaaJLUg2zdnP0n+8zjUP56SMq98/5kVtqLSSDcHyI+aFCRP2KkMTvVdJMHp+qoiwUQaxYCl5uRP986FdvmKnqoN7odOTKTwLywNolNwpe8XgXwa7QUoN7sQefkOrXhcAJqmlWxbAp4xdL9CfMUvVAj6Nln7LXC2KtHF6DBGu0ojCamdEX8oLU1JVfPw915Ck7coLBRkZyraV5rmx0G30+vwy1Kg5CBVQ0/A0TgXqBgpbIqZa2h2YDjIPBrh8f2AR5kfBQGd3poQxOoO7GJVQ== vmadmin@vm-build"
+      network_interfaces: nicansi
+      os_type: Linux
+      image:
+        offer: UbuntuServer
+        publisher: Canonical
+        sku: 18.04-LTS
+        version: latest
